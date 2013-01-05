@@ -369,7 +369,7 @@ class Pcap : public ObjectWrap {
       HandleScope scope;
 
       Local<FunctionTemplate> tpl = FunctionTemplate::New(New);
-      Local<String> name = String::NewSymbol("Pcap");
+      Local<String> name = String::NewSymbol("Cap");
 
       Pcap_constructor = Persistent<FunctionTemplate>::New(tpl);
       Pcap_constructor->InstanceTemplate()->SetInternalFieldCount(1);
@@ -386,7 +386,7 @@ class Pcap : public ObjectWrap {
     }
 };
 
-Handle<Value> ListDevices(const Arguments& args) {
+static Handle<Value> ListDevices(const Arguments& args) {
   HandleScope scope;
 
   char errbuf[PCAP_ERRBUF_SIZE];
@@ -443,7 +443,7 @@ Handle<Value> ListDevices(const Arguments& args) {
   return scope.Close(DevsArray);
 }
 
-Handle<Value> FindDevice(const Arguments& args) {
+static Handle<Value> FindDevice(const Arguments& args) {
   HandleScope scope;
 
   Local<Value> ret;
@@ -514,5 +514,5 @@ extern "C" {
                 FunctionTemplate::New(ListDevices)->GetFunction());
   }
 
-  NODE_MODULE(pcap, init);
+  NODE_MODULE(cap, init);
 }

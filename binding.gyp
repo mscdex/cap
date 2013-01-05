@@ -1,7 +1,7 @@
 {
   'targets': [
     {
-      'target_name': 'pcap',
+      'target_name': 'cap',
       'sources': [
         'src/binding.cc',
       ],
