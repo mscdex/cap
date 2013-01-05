@@ -12,6 +12,10 @@ Requirements
 
 * [node.js](http://nodejs.org/) -- v0.8.0 or newer
 
+* For Windows: [WinPcap](http://www.winpcap.org/install/default.htm)
+
+* For *nix: libpcap and libpcap-dev packages
+
 
 Install
 ============
