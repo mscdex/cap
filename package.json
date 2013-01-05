@@ -1,0 +1,10 @@
+{ "name": "cap",
+  "version": "0.0.0",
+  "author": "Brian White <mscdex@mscdex.net>",
+  "description": "A binding for performing packet capturing with node.js",
+  "main": "./lib/Pcap",
+  "engines": { "node": ">=0.8.0" },
+  "keywords": [ "pcap", "packet", "capture", "libpcap", "winpcap" ],
+  "licenses": [ { "type": "MIT", "url": "http://github.com/mscdex/cap/raw/master/LICENSE" } ],
+  "repository" : { "type": "git", "url": "http://github.com/mscdex/cap.git" }
+}
