@@ -1,28 +1,7 @@
 #include <node.h>
 #include <node_buffer.h>
 #include <pcap/pcap.h>
-
-#include <stdio.h>
-
-#ifdef _WIN32
-# define snprintf _snprintf
-// from: http://memset.wordpress.com/2010/10/09/inet_ntop-for-win32/
-const char* inet_ntop(int af, const void* src, char* dst, int cnt) {
-  struct sockaddr_in srcaddr;
-  memset(&srcaddr, 0, sizeof(struct sockaddr_in));
-  memcpy(&(srcaddr.sin_addr), src, sizeof(srcaddr.sin_addr));
-  srcaddr.sin_family = af;
-  if (WSAAddressToString((struct sockaddr*) &srcaddr, sizeof(struct sockaddr_in),
-                         0, dst, (LPDWORD) &cnt) != 0) {
-    DWORD rv = WSAGetLastError();
-    return NULL;
-  }
-  return dst;
-}
-#else
-# include <arpa/inet.h>
-# include <sys/ioctl.h>
-#endif
+#include <stdlib.h>
 
 using namespace node;
 using namespace v8;
@@ -30,6 +9,36 @@ using namespace v8;
 static Persistent<FunctionTemplate> Pcap_constructor;
 static Persistent<String> emit_symbol;
 static Persistent<String> packet_symbol;
+static Persistent<String> close_symbol;
+
+#ifdef _WIN32
+# define snprintf _snprintf
+  // from: http://memset.wordpress.com/2010/10/09/inet_ntop-for-win32/
+  const char* inet_ntop(int af, const void* src, char* dst, int cnt) {
+    struct sockaddr_in srcaddr;
+    memset(&srcaddr, 0, sizeof(struct sockaddr_in));
+    memcpy(&(srcaddr.sin_addr), src, sizeof(srcaddr.sin_addr));
+    srcaddr.sin_family = af;
+    if (WSAAddressToString((struct sockaddr*) &srcaddr,
+                           sizeof(struct sockaddr_in), 0, dst, (LPDWORD)
+                           &cnt) != 0) {
+      DWORD rv = WSAGetLastError();
+      return NULL;
+    }
+    return dst;
+  }
+  static uv_idle_t idle_immediate_dummy;
+  static uint32_t instances = 0;
+  static bool dummyStarted = false;
+  static void IdleImmediateDummy(uv_idle_t* handle, int status) {
+    // Do nothing. Only for maintaining event loop
+    assert(handle == &idle_immediate_dummy);
+    assert(status == 0);
+  }
+#else
+# include <arpa/inet.h>
+# include <sys/ioctl.h>
+#endif
 
 void SetAddrStringHelper(const char* key, sockaddr *addr,
                          Local<Object> Address) {
@@ -51,17 +60,6 @@ void SetAddrStringHelper(const char* key, sockaddr *addr,
   }
 }
 
-#ifdef _WIN32
-static uv_idle_t idle_immediate_dummy;
-static uint32_t instances = 0;
-static bool dummyStarted = false;
-static void IdleImmediateDummy(uv_idle_t* handle, int status) {
-  // Do nothing. Only for maintaining event loop
-  assert(handle == &idle_immediate_dummy);
-  assert(status == 0);
-}
-#endif
-
 class Pcap : public ObjectWrap {
   public:
     Persistent<Function> Emit;
@@ -78,21 +76,36 @@ class Pcap : public ObjectWrap {
     char *buffer_data;
     size_t buffer_length;
 
-    Pcap::Pcap() {
+    Pcap() {
       pcap_handle = NULL;
       buffer_data = NULL;
       buffer_length = 0;
-      fd = NULL;
     }
 
-    Pcap::~Pcap() {
+    ~Pcap() {
+      close();
+      Emit.Dispose();
+      Emit.Clear();
+    }
+
+    bool close() {
       if (pcap_handle) {
-        --instances;
+#ifdef _WIN32
+        if (--instances == 0) {
+          uv_idle_stop(&idle_immediate_dummy);
+          dummyStarted = false;
+        }
+        uv_check_stop(&wait_handle);
+#else
+        uv_poll_stop(&wait_handle);
+#endif
         pcap_close(pcap_handle);
         pcap_handle = NULL;
-        Emit.Dispose();
-        Emit.Clear();
+        buffer_data = NULL;
+        buffer_length = 0;
+        return true;
       }
+      return false;
     }
 
     static void EmitPacket(u_char* user, const struct pcap_pkthdr* pkt_hdr,
@@ -114,13 +127,13 @@ class Pcap : public ObjectWrap {
         Number::New(copy_len),
         Boolean::New(truncated)
       };
-      obj->Emit->Call(obj->handle_, 2, emit_argv);
+      obj->Emit->Call(obj->handle_, 3, emit_argv);
       if (try_catch.HasCaught())
         FatalException(try_catch);
     }
 
 #ifdef _WIN32
-    static void CheckPackets(uv_check_t* handle, int status) {
+    static void cb_packets(uv_check_t* handle, int status) {
       assert(status == 0);
       Pcap *obj = (Pcap*) handle->data;
 
@@ -134,7 +147,7 @@ class Pcap : public ObjectWrap {
       }
     }
 #else
-    static void CheckPackets(uv_poll_t* handle, int status, int events) {
+    static void cb_packets(uv_poll_t* handle, int status, int events) {
       assert(status == 0);
       Pcap *obj = (Pcap*) handle->data;
 
@@ -325,7 +338,7 @@ class Pcap : public ObjectWrap {
       obj->fd = pcap_getevent(obj->pcap_handle);
       r = uv_check_init(uv_default_loop(), &obj->wait_handle);
       assert(r == 0);
-      r = uv_check_start(&obj->wait_handle, Pcap::CheckPackets);
+      r = uv_check_start(&obj->wait_handle, cb_packets);
       assert(r == 0);
       ++instances;
       if (!dummyStarted) {
@@ -337,7 +350,7 @@ class Pcap : public ObjectWrap {
       obj->fd = pcap_get_selectable_fd(obj->pcap_handle);
       r = uv_poll_init(uv_default_loop(), &obj->wait_handle, obj->fd);
       assert(r == 0);
-      r = uv_poll_start(&obj->wait_handle, UV_READABLE, Pcap::CheckPackets);
+      r = uv_poll_start(&obj->wait_handle, UV_READABLE, cb_packets);
       assert(r == 0);
 #endif
       obj->wait_handle.data = obj;
@@ -349,13 +362,7 @@ class Pcap : public ObjectWrap {
       HandleScope scope;
       Pcap *obj = ObjectWrap::Unwrap<Pcap>(args.This());
 
-      if (obj->pcap_handle) {
-        --instances;
-        pcap_close(obj->pcap_handle);
-        obj->pcap_handle = NULL;
-      }
-
-      return Undefined();
+      return scope.Close(Boolean::New(obj->close()));
     }
 
     static void Initialize(Handle<Object> target) {
@@ -373,6 +380,7 @@ class Pcap : public ObjectWrap {
 
       emit_symbol = NODE_PSYMBOL("emit");
       packet_symbol = NODE_PSYMBOL("packet");
+      close_symbol = NODE_PSYMBOL("close");
 
       target->Set(name, Pcap_constructor->GetFunction());
     }
