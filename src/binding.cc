@@ -185,6 +185,9 @@ class Pcap : public ObjectWrap {
       HandleScope scope;
       Pcap *obj = ObjectWrap::Unwrap<Pcap>(args.This());
 
+      if (obj->pcap_handle)
+        obj->close();
+
       if (args.Length() >= 4) { 
         if (!args[0]->IsString()) {
           return ThrowException(
