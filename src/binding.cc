@@ -416,7 +416,7 @@ Handle<Value> ListDevices(const Arguments& args) {
     }
 
     for (j = 0, cur_addr = cur_dev->addresses; cur_addr != NULL;
-         cur_addr = cur_addr->next, ++j) {
+         cur_addr = cur_addr->next) {
       if (cur_addr->addr) {
         af = cur_addr->addr->sa_family;
         if (af == AF_INET || af == AF_INET6) {
@@ -425,7 +425,7 @@ Handle<Value> ListDevices(const Arguments& args) {
           SetAddrStringHelper("netmask", cur_addr->netmask, Address);
           SetAddrStringHelper("broadaddr", cur_addr->broadaddr, Address);
           SetAddrStringHelper("dstaddr", cur_addr->dstaddr, Address);
-          AddrArray->Set(Integer::New(j), Address);
+          AddrArray->Set(Integer::New(j++), Address);
         }
       }
     }
