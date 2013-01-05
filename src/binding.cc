@@ -510,7 +510,7 @@ extern "C" {
     Pcap::Initialize(target);
     target->Set(String::NewSymbol("findDevice"),
                 FunctionTemplate::New(FindDevice)->GetFunction());
-    target->Set(String::NewSymbol("listDevices"),
+    target->Set(String::NewSymbol("deviceList"),
                 FunctionTemplate::New(ListDevices)->GetFunction());
   }
 
