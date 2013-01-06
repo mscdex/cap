@@ -2,7 +2,7 @@
 Description
 ===========
 
-A binding for performing packet capturing with [node.js](http://nodejs.org/).
+A cross-platform binding for performing packet capturing with [node.js](http://nodejs.org/).
 
 This binding is tested on Windows and Linux.
 

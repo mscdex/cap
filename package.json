@@ -1,7 +1,7 @@
 { "name": "cap",
   "version": "0.0.2",
   "author": "Brian White <mscdex@mscdex.net>",
-  "description": "A binding for performing packet capturing with node.js",
+  "description": "A cross-platform binding for performing packet capturing with node.js",
   "main": "./lib/Cap",
   "engines": { "node": ">=0.8.0" },
   "keywords": [ "pcap", "packet", "capture", "libpcap", "winpcap" ],
