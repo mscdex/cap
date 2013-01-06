@@ -94,7 +94,7 @@ Cap methods
 Cap static methods
 ------------------
 
-* **findDevice**(< _string_ >ip) - _mixed_ - Returns the (first) device name associated with `ip`, or undefined if not found.
+* **findDevice**([< _string_ >ip]) - _mixed_ - If `ip` is given, the (first) device name associated with `ip`, or undefined if not found, is returned. Otherwise the device name of the first non-loopback device is returned.
 
 * **deviceList**() - _array_ - Returns a list of available devices and related information.
 
