@@ -503,7 +503,8 @@ static Handle<Value> FindDevice(const Arguments& args) {
   }
 
   pcap_freealldevs(alldevs);
-  free(ip);
+  if (ip)
+    free(ip);
   return scope.Close(ret);
 }
 
