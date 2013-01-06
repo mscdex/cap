@@ -3,14 +3,6 @@
 #include <pcap/pcap.h>
 #include <stdlib.h>
 
-using namespace node;
-using namespace v8;
-
-static Persistent<FunctionTemplate> Pcap_constructor;
-static Persistent<String> emit_symbol;
-static Persistent<String> packet_symbol;
-static Persistent<String> close_symbol;
-
 #ifdef _WIN32
 # define snprintf _snprintf
   // from: http://memset.wordpress.com/2010/10/09/inet_ntop-for-win32/
@@ -27,18 +19,18 @@ static Persistent<String> close_symbol;
     }
     return dst;
   }
-  static uv_idle_t idle_immediate_dummy;
-  static uint32_t instances = 0;
-  static bool dummyStarted = false;
-  static void IdleImmediateDummy(uv_idle_t* handle, int status) {
-    // Do nothing. Only for maintaining event loop
-    assert(handle == &idle_immediate_dummy);
-    assert(status == 0);
-  }
 #else
 # include <arpa/inet.h>
 # include <sys/ioctl.h>
 #endif
+
+using namespace node;
+using namespace v8;
+
+static Persistent<FunctionTemplate> Pcap_constructor;
+static Persistent<String> emit_symbol;
+static Persistent<String> packet_symbol;
+static Persistent<String> close_symbol;
 
 void SetAddrStringHelper(const char* key, sockaddr *addr,
                          Local<Object> Address) {
@@ -65,10 +57,11 @@ class Pcap : public ObjectWrap {
     Persistent<Function> Emit;
 
 #ifdef _WIN32
-    uv_check_t wait_handle;
-    HANDLE fd;
+    HANDLE wait;
+    //uv_mutex_t mutex;
+    uv_async_t async;
 #else
-    uv_poll_t wait_handle;
+    uv_poll_t poll_handle;
     int fd;
 #endif
     pcap_t *pcap_handle;
@@ -80,6 +73,9 @@ class Pcap : public ObjectWrap {
       pcap_handle = NULL;
       buffer_data = NULL;
       buffer_length = 0;
+#ifdef _WIN32
+      wait = NULL;
+#endif
     }
 
     ~Pcap() {
@@ -91,18 +87,20 @@ class Pcap : public ObjectWrap {
     bool close() {
       if (pcap_handle) {
 #ifdef _WIN32
-        if (--instances == 0) {
-          uv_idle_stop(&idle_immediate_dummy);
-          dummyStarted = false;
+        if (wait) {
+          UnregisterWait(wait);
+          wait = NULL;
         }
-        uv_check_stop(&wait_handle);
+        //uv_mutex_destroy(&mutex);
+        uv_close((uv_handle_t*)&async, cb_close);
 #else
-        uv_poll_stop(&wait_handle);
+        uv_poll_stop(&poll_handle);
 #endif
         pcap_close(pcap_handle);
         pcap_handle = NULL;
         buffer_data = NULL;
         buffer_length = 0;
+        Unref();
         return true;
       }
       return false;
@@ -133,18 +131,33 @@ class Pcap : public ObjectWrap {
     }
 
 #ifdef _WIN32
-    static void cb_packets(uv_check_t* handle, int status) {
+    static void cb_packets(uv_async_t* handle, int status) {
       assert(status == 0);
       Pcap *obj = (Pcap*) handle->data;
+      int packet_count;
 
-      DWORD ret = WaitForSingleObject(obj->fd, 0);
-      if (ret == WAIT_OBJECT_0) {
-        int packet_count;
-        do {
-          packet_count = pcap_dispatch(obj->pcap_handle, 1, Pcap::EmitPacket,
-                                       (u_char*)obj);
-        } while (packet_count > 0);
-      }
+      //uv_mutex_lock(&obj->mutex);
+      do {
+        packet_count = pcap_dispatch(obj->pcap_handle, 1, Pcap::EmitPacket,
+                                     (u_char*)obj);
+      } while (packet_count > 0);
+      //uv_mutex_unlock(&obj->mutex);
+    }
+    static void CALLBACK OnPacket(void* data, BOOLEAN didTimeout) {
+      assert(!didTimeout);
+      uv_async_t* async = (uv_async_t*) data;
+      int r = uv_async_send(async);
+      assert(r == 0);
+    }
+    static void cb_close(uv_handle_t* handle) {
+      /*HandleScope scope;
+      Pcap *obj = (Pcap*) handle->data;
+      TryCatch try_catch;
+      Handle<Value> emit_argv[1] = { close_symbol };
+      obj->Emit->Call(obj->handle_, 1, emit_argv);
+      if (try_catch.HasCaught())
+        FatalException(try_catch);
+      */
     }
 #else
     static void cb_packets(uv_poll_t* handle, int status, int events) {
@@ -172,7 +185,6 @@ class Pcap : public ObjectWrap {
 
       Pcap *obj = new Pcap();
       obj->Wrap(args.This());
-      obj->Ref();
 
       obj->Emit = Persistent<Function>::New(
                     Local<Function>::Cast(obj->handle_->Get(emit_symbol))
@@ -271,7 +283,7 @@ class Pcap : public ObjectWrap {
 
       // Set "timeout" on read, even though we are also setting nonblock below.
       // On Linux this is required.
-      if (pcap_set_timeout(obj->pcap_handle, 500) != 0) {
+      if (pcap_set_timeout(obj->pcap_handle, 1000) != 0) {
         return ThrowException(
           Exception::Error(String::New("Unable to set read timeout"))
         );
@@ -338,26 +350,42 @@ class Pcap : public ObjectWrap {
 
       int r;
 #ifdef _WIN32
-      obj->fd = pcap_getevent(obj->pcap_handle);
-      r = uv_check_init(uv_default_loop(), &obj->wait_handle);
+      r = uv_async_init(uv_default_loop(), &obj->async, cb_packets);
       assert(r == 0);
-      r = uv_check_start(&obj->wait_handle, cb_packets);
-      assert(r == 0);
-      ++instances;
-      if (!dummyStarted) {
-        dummyStarted = true;
-        uv_idle_init(uv_default_loop(), &idle_immediate_dummy);
-        uv_idle_start(&idle_immediate_dummy, IdleImmediateDummy);
+      obj->async.data = obj;
+      //r = uv_mutex_init(&obj->mutex);
+      //assert(r == 0);
+      r = RegisterWaitForSingleObject(
+        &obj->wait,
+        pcap_getevent(obj->pcap_handle),
+        OnPacket,
+        &obj->async,
+        INFINITE,
+        WT_EXECUTEINWAITTHREAD
+      );
+      if (!r) {
+        char *errmsg = NULL;
+        FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER
+                      | FORMAT_MESSAGE_FROM_SYSTEM
+                      | FORMAT_MESSAGE_IGNORE_INSERTS,
+                      NULL,
+                      GetLastError(),
+                      MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                      (LPTSTR)&errmsg,
+                      0,
+                      NULL);
+        return ThrowException(Exception::Error(String::New(errmsg)));
       }
 #else
       obj->fd = pcap_get_selectable_fd(obj->pcap_handle);
-      r = uv_poll_init(uv_default_loop(), &obj->wait_handle, obj->fd);
+      r = uv_poll_init(uv_default_loop(), &obj->poll_handle, obj->fd);
       assert(r == 0);
-      r = uv_poll_start(&obj->wait_handle, UV_READABLE, cb_packets);
+      r = uv_poll_start(&obj->poll_handle, UV_READABLE, cb_packets);
       assert(r == 0);
+      obj->poll_handle.data = obj;
 #endif
-      obj->wait_handle.data = obj;
 
+      obj->Ref();
       return scope.Close(ret);
     }
 
