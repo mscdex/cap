@@ -339,6 +339,9 @@ class Pcap : public ObjectWrap {
       case DLT_IEEE802_11_RADIO: // 802.11 "monitor mode"
         ret = String::New("IEEE802_11_RADIO");
         break;
+      case DLT_LINUX_SLL: // "Linux cooked-mode capture"
+        ret = String::New("LINKTYPE_LINUX_SLL");
+        break;
       case DLT_RAW: // "raw IP"
         ret = String::New("RAW");
         break;
