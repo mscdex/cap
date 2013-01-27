@@ -239,7 +239,11 @@ class Pcap : public ObjectWrap {
       String::Utf8Value device(args[0]->ToString());
       String::Utf8Value filter(args[1]->ToString());
       int buffer_size = args[2]->Int32Value();
+#if NODE_MAJOR_VERSION == 0 && NODE_MINOR_VERSION < 10
       Local<Object> buffer_obj = args[3]->ToObject();
+#else
+      Local<Value> buffer_obj = args[3];
+#endif
       struct bpf_program fp;
       bpf_u_int32 mask;
       bpf_u_int32 net;
