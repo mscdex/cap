@@ -10,20 +10,17 @@
           'include_dirs': [
             'deps/winpcap/Include',
           ],
-          'link_settings': {
-            'libraries': ['ws2_32.lib'],
-          },
           'defines': [
             'WPCAP',
           ],
           'conditions': [
             [ 'target_arch=="ia32"', {
               'link_settings': {
-                'libraries': ['<(PRODUCT_DIR)/../../deps/winpcap/Lib/wpcap.lib'],
+                'libraries': ['ws2_32.lib', '<(PRODUCT_DIR)/../../deps/winpcap/Lib/wpcap.lib'],
               },
             }, {
               'link_settings': {
-                'libraries': ['<(PRODUCT_DIR)/../../deps/winpcap/Lib/x64/wpcap.lib'],
+                'libraries': ['ws2_32.lib', '<(PRODUCT_DIR)/../../deps/winpcap/Lib/x64/wpcap.lib'],
               },
             }],
           ],
