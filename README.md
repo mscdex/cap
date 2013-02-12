@@ -26,22 +26,57 @@ Install
 Examples
 ========
 
-* Capture all outgoing TCP data packets destined for port 80 on the interface for 192.168.0.10:
+* Capture and decode all outgoing TCP data packets destined for port 80 on the interface for 192.168.0.10:
 
 ```javascript
-var Cap = require('cap').Cap;
+var Cap = require('cap').Cap,
+    decoders = require('cap').decoders;
 
 var c = new Cap(),
     device = Cap.findDevice('192.168.0.10'),
-    filter = 'tcp and dst port 80 and (((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2)) > 0)',
+    filter = 'tcp and dst port 80',
     bufSize = 10 * 1024 * 1024,
     buffer = new Buffer(65535);
 
-p.open(device, filter, bufSize, buffer);
+var linkType = p.open(device, filter, bufSize, buffer);
+
+p.setMinBytes && p.setMinBytes(0);
+
 p.on('packet', function(nbytes, trunc) {
   console.log('packet: length ' + nbytes + ' bytes, truncated? '
               + (trunc ? 'yes' : 'no'));
+
   // raw packet data === buffer.slice(0, nbytes)
+
+  if (linkType === 'ETHERNET') {
+    var ret = decoders.Ethernet(buffer);
+
+    if (ret.info.type === PROTOCOL.ETHERNET.IPV4) {
+      console.log('Decoding IPv4 ...');
+
+      ret = decoders.IPv4(buffer, ret.offset);
+      console.log('from: ' + ret.info.srcaddr + ' to ' + ret.info.dstaddr);
+
+      if (ret.info.protocol === PROTOCOL.IP.TCP) {
+        var datalen = ret.info.totallen - ret.hdrlen;
+
+        console.log('Decoding TCP ...');
+
+        ret = decoders.TCP(buffer, ret.offset);
+        console.log(' from port: ' + ret.info.srcport + ' to port: ' + ret.info.dstport);
+        datalen -= ret.hdrlen;
+        console.log(hexy(buffer.toString('binary', ret.offset, ret.offset + datalen)));
+      } else if (ret.info.protocol === PROTOCOL.IP.UDP) {
+        console.log('Decoding UDP ...');
+
+        ret = decoders.UDP(buffer, ret.offset);
+        console.log(' from port: ' + ret.info.srcport + ' to port: ' + ret.info.dstport);
+        console.log(buffer.toString('binary', ret.offset, ret.offset + ret.info.length));
+      } else
+        console.log('Unsupported IPv4 protocol: ' + PROTOCOL.IP[ret.info.protocol]);
+    } else
+      console.log('Unsupported Ethertype: ' + PROTOCOL.ETHERNET[ret.info.type]);
+  }
 });
 ```
 
@@ -81,6 +116,7 @@ Cap events
 
 * **packet**(< _integer_ >nbytes, < _boolean_ >truncated) - A packet `nbytes` in size was captured. `truncated` indicates if the entire packet did not fit inside the _Buffer_ supplied to open().
 
+
 Cap methods
 -----------
 
@@ -89,6 +125,8 @@ Cap methods
 * **open**(< _string_ >device, < _string_ >filter, < _integer_ >bufSize, < _Buffer_ >buffer) - _(void)_ - Opens `device` and starts capturing packets using `filter`. `bufSize` is the size of the internal buffer that libpcap uses to temporarily store packets until they are emitted. `buffer` is a Buffer large enough to store one packet. If open() is called again without a previous call to close(), an implicit close() will occur first.
 
 * **close**() - _(void)_ - Stops capturing.
+
+* **setMinBytes**(< _integer_ >nBytes) - _(void) - **(Windows ONLY)** This sets the minimum number of packet bytes that must be captured before the full packet data is made available. If this value is set too high, you may not receive any packets until WinPCap's internal buffer fills up. Therefore it's generally best to pass in 0 to this function after calling open(), despite it resulting in more syscalls.
 
 
 Cap static methods
@@ -99,7 +137,27 @@ Cap static methods
 * **deviceList**() - _array_ - Returns a list of available devices and related information.
 
 
-TODO
-====
+Decoders static methods
+-----------------------
 
-* Packet decoding?
+The following methods are available off of `require('cap').decoders`. They parse the relevant protocol header and return an object containing the parsed information:
+
+* Link Layer Protocols
+
+    * **Ethernet**(< _Buffer_ buf[, < _integer_ >bufOffset=0])
+
+* Internet Layer Protocols
+
+    * **IPV4**(< _Buffer_ buf[, < _integer_ >bufOffset=0])
+
+    * **IPV6**(< _Buffer_ buf[, < _integer_ >bufOffset=0])
+
+    * **ICMPV4**(< _Buffer_ buf, < _integer_ >nbytes[, < _integer_ >bufOffset=0])
+
+* Transport Layer Protocols
+
+    * **TCP**(< _Buffer_ buf[, < _integer_ >bufOffset=0])
+
+    * **UDP**(< _Buffer_ buf[, < _integer_ >bufOffset=0])
+
+    * **SCTP**(< _Buffer_ buf, < _integer_ >nbytes[, < _integer_ >bufOffset=0])
