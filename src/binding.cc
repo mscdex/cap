@@ -334,25 +334,25 @@ class Pcap : public ObjectWrap {
 
       Local<Value> ret;
       switch (link_type) {
-      case DLT_NULL:
-        ret = String::New("NULL");
-        break;
-      case DLT_EN10MB: // most wifi interfaces pretend to be "ethernet"
-        ret =  String::New("ETHERNET");
-        break;
-      case DLT_IEEE802_11_RADIO: // 802.11 "monitor mode"
-        ret = String::New("IEEE802_11_RADIO");
-        break;
-      case DLT_LINUX_SLL: // "Linux cooked-mode capture"
-        ret = String::New("LINKTYPE_LINUX_SLL");
-        break;
-      case DLT_RAW: // "raw IP"
-        ret = String::New("RAW");
-        break;
-      default:
-        snprintf(errbuf, PCAP_ERRBUF_SIZE, "Unknown linktype %d", link_type);
-        ret = String::New(errbuf);
-        break;
+        case DLT_NULL:
+          ret = String::New("NULL");
+          break;
+        case DLT_EN10MB: // most wifi interfaces pretend to be "ethernet"
+          ret =  String::New("ETHERNET");
+          break;
+        case DLT_IEEE802_11_RADIO: // 802.11 "monitor mode"
+          ret = String::New("IEEE802_11_RADIO");
+          break;
+        case DLT_LINUX_SLL: // "Linux cooked-mode capture"
+          ret = String::New("LINKTYPE_LINUX_SLL");
+          break;
+        case DLT_RAW: // "raw IP"
+          ret = String::New("RAW");
+          break;
+        default:
+          snprintf(errbuf, PCAP_ERRBUF_SIZE, "Unknown linktype %d", link_type);
+          ret = String::New(errbuf);
+          break;
       }
 
       int r;
