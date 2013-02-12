@@ -396,6 +396,40 @@ class Pcap : public ObjectWrap {
       return scope.Close(ret);
     }
 
+#ifdef _WIN32
+    static Handle<Value> WIN_SetMin(const Arguments& args) {
+      HandleScope scope;
+      Pcap *obj = ObjectWrap::Unwrap<Pcap>(args.This());
+
+      if (args.Length() < 1) {
+        return ThrowException(
+          Exception::Error(String::New("missing min bytes value"))
+        );
+      }
+      if (!args[0]->IsUint32()) {
+        return ThrowException(
+          Exception::TypeError(
+            String::New("min bytes must be a positive number")
+          )
+        );
+      }
+
+      if (obj->pcap_handle == NULL) {
+        return ThrowException(
+          Exception::Error(String::New("Not currently capturing/open"))
+        );
+      }
+
+      if (pcap_setmintocopy(obj->pcap_handle, args[0]->Uint32Value()) != 0) {
+        return ThrowException(
+          Exception::Error(String::New("Unable to set min bytes"))
+        );
+      }
+
+      return Undefined();
+    }
+#endif
+
     static Handle<Value> Close(const Arguments& args) {
       HandleScope scope;
       Pcap *obj = ObjectWrap::Unwrap<Pcap>(args.This());
@@ -415,6 +449,9 @@ class Pcap : public ObjectWrap {
 
       NODE_SET_PROTOTYPE_METHOD(Pcap_constructor, "open", Open);
       NODE_SET_PROTOTYPE_METHOD(Pcap_constructor, "close", Close);
+#ifdef _WIN32
+      NODE_SET_PROTOTYPE_METHOD(Pcap_constructor, "setMinBytes", WIN_SetMin);
+#endif
 
       emit_symbol = NODE_PSYMBOL("emit");
       packet_symbol = NODE_PSYMBOL("packet");
