@@ -30,7 +30,8 @@ Examples
 
 ```javascript
 var Cap = require('cap').Cap,
-    decoders = require('cap').decoders;
+    decoders = require('cap').decoders,
+    PROTOCOL = decoders.PROTOCOL;
 
 var c = new Cap(),
     device = Cap.findDevice('192.168.0.10'),
