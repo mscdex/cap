@@ -38,11 +38,11 @@ var c = new Cap(),
     bufSize = 10 * 1024 * 1024,
     buffer = new Buffer(65535);
 
-var linkType = p.open(device, filter, bufSize, buffer);
+var linkType = c.open(device, filter, bufSize, buffer);
 
-p.setMinBytes && p.setMinBytes(0);
+c.setMinBytes && c.setMinBytes(0);
 
-p.on('packet', function(nbytes, trunc) {
+c.on('packet', function(nbytes, trunc) {
   console.log('packet: length ' + nbytes + ' bytes, truncated? '
               + (trunc ? 'yes' : 'no'));
 
@@ -54,7 +54,7 @@ p.on('packet', function(nbytes, trunc) {
     if (ret.info.type === PROTOCOL.ETHERNET.IPV4) {
       console.log('Decoding IPv4 ...');
 
-      ret = decoders.IPv4(buffer, ret.offset);
+      ret = decoders.IPV4(buffer, ret.offset);
       console.log('from: ' + ret.info.srcaddr + ' to ' + ret.info.dstaddr);
 
       if (ret.info.protocol === PROTOCOL.IP.TCP) {
