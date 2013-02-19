@@ -31,6 +31,7 @@ Examples
 ```javascript
 var Cap = require('cap').Cap,
     decoders = require('cap').decoders;
+    hexy = require('hexy').hexy;
 
 var c = new Cap(),
     device = Cap.findDevice('192.168.0.10'),
@@ -51,13 +52,13 @@ c.on('packet', function(nbytes, trunc) {
   if (linkType === 'ETHERNET') {
     var ret = decoders.Ethernet(buffer);
 
-    if (ret.info.type === PROTOCOL.ETHERNET.IPV4) {
+    if (ret.info.type === decoders.PROTOCOL.ETHERNET.IPV4) {
       console.log('Decoding IPv4 ...');
 
       ret = decoders.IPV4(buffer, ret.offset);
       console.log('from: ' + ret.info.srcaddr + ' to ' + ret.info.dstaddr);
 
-      if (ret.info.protocol === PROTOCOL.IP.TCP) {
+      if (ret.info.protocol === decoders.PROTOCOL.IP.TCP) {
         var datalen = ret.info.totallen - ret.hdrlen;
 
         console.log('Decoding TCP ...');
