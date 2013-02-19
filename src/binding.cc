@@ -465,7 +465,7 @@ static Handle<Value> ListDevices(const Arguments& args) {
   HandleScope scope;
 
   char errbuf[PCAP_ERRBUF_SIZE];
-  pcap_if_t *alldevs, *cur_dev;
+  pcap_if_t *alldevs = NULL, *cur_dev;
   pcap_addr_t *cur_addr;
   int i, j, af;
 
@@ -474,8 +474,8 @@ static Handle<Value> ListDevices(const Arguments& args) {
   Local<Array> DevsArray;
   Local<Array> AddrArray;
 
-  if (pcap_findalldevs(&alldevs, errbuf) == -1 || alldevs == NULL)
-    return ThrowException(Exception::TypeError(String::New(errbuf)));
+  if (pcap_findalldevs(&alldevs, errbuf) == -1)
+    return ThrowException(Exception::Error(String::New(errbuf)));
 
   DevsArray = Array::New();
 
@@ -513,7 +513,8 @@ static Handle<Value> ListDevices(const Arguments& args) {
     DevsArray->Set(Integer::New(i), Dev);
   }
 
-  pcap_freealldevs(alldevs);
+  if (alldevs)
+    pcap_freealldevs(alldevs);
 
   return scope.Close(DevsArray);
 }
@@ -526,7 +527,7 @@ static Handle<Value> FindDevice(const Arguments& args) {
   char name4[INET_ADDRSTRLEN];
   char name6[INET6_ADDRSTRLEN];
   char *ip = NULL;
-  pcap_if_t *alldevs, *dev;
+  pcap_if_t *alldevs = NULL, *dev;
   pcap_addr_t *addr;
   bool found = false;
 
@@ -541,7 +542,7 @@ static Handle<Value> FindDevice(const Arguments& args) {
     strcpy(ip, *ipstr);
   }
 
-  if (pcap_findalldevs(&alldevs, errbuf) == -1 || alldevs == NULL)
+  if (pcap_findalldevs(&alldevs, errbuf) == -1)
     return ThrowException(Exception::Error(String::New(errbuf)));
 
   for (dev = alldevs; dev != NULL; dev = dev->next) {
@@ -574,7 +575,8 @@ static Handle<Value> FindDevice(const Arguments& args) {
     }
   }
 
-  pcap_freealldevs(alldevs);
+  if (alldevs)
+    pcap_freealldevs(alldevs);
   if (ip)
     free(ip);
   return scope.Close(ret);
