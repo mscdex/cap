@@ -66,7 +66,7 @@ c.on('packet', function(nbytes, trunc) {
         ret = decoders.TCP(buffer, ret.offset);
         console.log(' from port: ' + ret.info.srcport + ' to port: ' + ret.info.dstport);
         datalen -= ret.hdrlen;
-        console.log(hexy(buffer.toString('binary', ret.offset, ret.offset + datalen)));
+        console.log(buffer.toString('binary', ret.offset, ret.offset + datalen));
       } else if (ret.info.protocol === PROTOCOL.IP.UDP) {
         console.log('Decoding UDP ...');
 
