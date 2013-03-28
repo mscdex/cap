@@ -2,6 +2,7 @@
 #include <node_buffer.h>
 #include <pcap/pcap.h>
 #include <stdlib.h>
+#include <string.h>
 
 #ifdef _WIN32
 # define snprintf _snprintf
