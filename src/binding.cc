@@ -15,7 +15,6 @@
     if (WSAAddressToString((struct sockaddr*) &srcaddr,
                            sizeof(struct sockaddr_in), 0, dst, (LPDWORD)
                            &cnt) != 0) {
-      DWORD rv = WSAGetLastError();
       return NULL;
     }
     return dst;
@@ -532,6 +531,9 @@ static Handle<Value> FindDevice(const Arguments& args) {
   pcap_addr_t *addr;
   bool found = false;
 
+  if (pcap_findalldevs(&alldevs, errbuf) == -1)
+    return ThrowException(Exception::Error(String::New(errbuf)));
+
   if (args.Length() > 0) { 
     if (!args[0]->IsString()) {
       return ThrowException(
@@ -542,9 +544,6 @@ static Handle<Value> FindDevice(const Arguments& args) {
     ip = (char*)malloc(sizeof(*ipstr));
     strcpy(ip, *ipstr);
   }
-
-  if (pcap_findalldevs(&alldevs, errbuf) == -1)
-    return ThrowException(Exception::Error(String::New(errbuf)));
 
   for (dev = alldevs; dev != NULL; dev = dev->next) {
     if (dev->addresses != NULL && !(dev->flags & PCAP_IF_LOOPBACK)) {
