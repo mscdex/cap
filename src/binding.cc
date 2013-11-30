@@ -6,15 +6,27 @@
 
 #ifdef _WIN32
 # define snprintf _snprintf
-  // from: http://memset.wordpress.com/2010/10/09/inet_ntop-for-win32/
   const char* inet_ntop(int af, const void* src, char* dst, int cnt) {
-    struct sockaddr_in srcaddr;
-    memset(&srcaddr, 0, sizeof(struct sockaddr_in));
-    memcpy(&(srcaddr.sin_addr), src, sizeof(srcaddr.sin_addr));
-    srcaddr.sin_family = af;
-    if (WSAAddressToString((struct sockaddr*) &srcaddr,
-                           sizeof(struct sockaddr_in), 0, dst, (LPDWORD)
-                           &cnt) != 0) {
+    struct sockaddr_storage sa;
+    struct sockaddr_in *srcaddr = (struct sockaddr_in*)&sa;
+    struct sockaddr_in6 *srcaddr6 = (struct sockaddr_in6*)&sa;
+    int addr_len;
+    memset(&sa, 0, sizeof(sa));
+    if (af == AF_INET) {
+      srcaddr->sin_family = af;
+      addr_len = sizeof(struct sockaddr_in);
+      memcpy(&srcaddr->sin_addr, src, sizeof(struct in_addr));
+    } else if (af == AF_INET6) {
+      srcaddr6->sin6_family = af;
+      addr_len = sizeof(struct sockaddr_in6);
+      memcpy(&srcaddr6->sin6_addr, src, sizeof(struct in6_addr));
+    } else
+      return NULL;
+    if (WSAAddressToString((LPSOCKADDR)&sa,
+                           addr_len,
+                           0,
+                           dst,
+                           (LPDWORD)&cnt) != 0) {
       return NULL;
     }
     return dst;
@@ -48,7 +60,10 @@ void SetAddrStringHelper(const char* key, sockaddr *addr,
       size = INET6_ADDRSTRLEN;
     }
     const char* address = inet_ntop(addr->sa_family, src, dst_addr, size);
-    Address->Set(String::New(key), String::New(address));
+    if (address == NULL)
+      Address->Set(String::New(key), Undefined());
+    else
+      Address->Set(String::New(key), String::New(address));
   }
 }
 
