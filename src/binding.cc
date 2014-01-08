@@ -556,7 +556,7 @@ static Handle<Value> FindDevice(const Arguments& args) {
       );
     }
     String::AsciiValue ipstr(args[0]->ToString());
-    ip = (char*)malloc(sizeof(*ipstr));
+    ip = (char*)malloc(ipstr.length());
     strcpy(ip, *ipstr);
   }
 
