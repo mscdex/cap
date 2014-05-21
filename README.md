@@ -14,7 +14,7 @@ Requirements
 
 * For Windows: [WinPcap](http://www.winpcap.org/install/default.htm)
 
-* For *nix: libpcap and libpcap-dev packages
+* For *nix: libpcap and libpcap-dev/libpcap-devel packages
 
 
 Install
