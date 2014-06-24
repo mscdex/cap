@@ -81,6 +81,56 @@ c.on('packet', function(nbytes, trunc) {
 });
 ```
 
+* Send an arbitrary packet: An arp request for example
+
+```javascript
+var Cap = require('cap').Cap,
+    c = new Cap(),
+    device = Cap.findDevice('192.168.1.200'),
+    filter = 'arp',
+    bufSize = 10 * 1024 * 1024,
+    buffer = new Buffer(65535);
+
+var linkType = c.open(device, filter, bufSize, buffer);
+
+
+// To use this example, change Source Mac, Sender Hardware Address (MAC) and Target Protocol address
+var buffer = new Buffer ([
+    // ETHERNET
+    0xff, 0xff, 0xff, 0xff, 0xff,0xff,                  // 0    = Destination MAC
+    0x84, 0x8F, 0x69, 0xB7, 0x3D, 0x92,                 // 6    = Source MAC
+    0x08, 0x06,                                         // 12   = EtherType = ARP
+    // ARP
+    0x00, 0x01,                                         // 14/0   = Hardware Type = Ethernet (or wifi)
+    0x08, 0x00,                                         // 16/2   = Protocol type = ipv4 (request ipv4 route info)
+    0x06, 0x04,                                         // 18/4   = Hardware Addr Len (Ether/MAC = 6), Protocol Addr Len (ipv4 = 4)
+    0x00, 0x01,                                         // 20/6   = Operation (ARP, who-has)
+    0x84, 0x8f, 0x69, 0xb7, 0x3d, 0x92,                 // 22/8   = Sender Hardware Addr (MAC)
+    0xc0, 0xa8, 0x01, 0xc8,                             // 28/14  = Sender Protocol address (ipv4)
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00,                 // 32/18  = Target Hardware Address (Blank/nulls for who-has)
+    0xc0, 0xa8, 0x01, 0xc9                              // 38/24  = Target Protocol address (ipv4)
+]);
+
+try {
+  // send will not work if pcap_sendpacket is not supported by underlying `device`
+  c.send(buffer, buffer.length);
+} catch (e) {
+  console.log("Error sending packet:", e);
+}
+
+// TCPDUMP.  Note: Some values are changed by the network stack when the broadcast arp message is received.
+//12:28:33.230319 ARP, Ethernet (len 6), IPv4 (len 4), Request who-has 192.168.1.200 tell 192.168.1.199, length 46
+//0x0000:  ffff ffff ffff 848f 69b7 3d92 0806 0001  ........i.=.....
+//0x0010:  0800 0604 0001 848f 69b7 3d92 c0a8 01c7  ........i.=.....
+//0x0020:  0000 0000 0000 c0a8 01c8 0000 0000 0000  ................
+//0x0030:  0000 0000 0000 0000 0000 0000            ............
+//12:28:33.230336 ARP, Ethernet (len 6), IPv4 (len 4), Reply 192.168.1.200 is-at 74:ea:3a:a3:e6:69, length 28
+//0x0000:  848f 69b7 3d92 74ea 3aa3 e669 0806 0001  ..i.=.t.:..i....
+//0x0010:  0800 0604 0002 74ea 3aa3 e669 c0a8 01c8  ......t.:..i....
+//0x0020:  848f 69b7 3d92 c0a8 01c7                 ..i.=.....
+
+```
+
 * List all network devices:
 
 ```javascript
@@ -129,6 +179,7 @@ Cap methods
 
 * **setMinBytes**(< _integer_ >nBytes) - _(void) - **(Windows ONLY)** This sets the minimum number of packet bytes that must be captured before the full packet data is made available. If this value is set too high, you may not receive any packets until WinPCap's internal buffer fills up. Therefore it's generally best to pass in 0 to this function after calling open(), despite it resulting in more syscalls.
 
+* **send**(< _Buffer_ >buffer, < _integer_ > bytesToSend) - (integer) Sends an arbitrary packet on the connected `device`.
 
 Cap static methods
 ------------------
