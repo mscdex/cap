@@ -208,6 +208,60 @@ class Pcap : public ObjectWrap {
       return args.This();
     }
 
+    static Handle<Value> Send(const Arguments& args) {
+      HandleScope scope;
+      Pcap *obj = ObjectWrap::Unwrap<Pcap>(args.This());
+      unsigned int buffer_size = 0;
+
+      if (args.Length() >= 1) {
+        if (!Buffer::HasInstance(args[0])) {
+          return ThrowException(
+            Exception::TypeError(
+              String::New("first parameter must be a buffer")
+            )
+          );
+        }
+        if (args.Length() >= 2) {
+          if (!args[1]->IsUint32()) {
+            return ThrowException(
+              Exception::TypeError(
+                String::New("length must be a positive integer")
+              )
+            );
+          }
+          buffer_size = args[1]->Uint32Value();
+        }
+      } else {
+        return ThrowException(
+          Exception::TypeError(
+            String::New("the first parameter must be a buffer")
+          )
+        );
+      }
+#if NODE_MAJOR_VERSION == 0 && NODE_MINOR_VERSION < 10
+      Local<Object> buffer_obj = args[0]->ToObject();
+#else
+      Local<Value> buffer_obj = args[0];
+#endif
+      if (args.Length() == 1) {
+        buffer_size = Buffer::Length(buffer_obj);
+      } else {
+        if (buffer_size > Buffer::Length(buffer_obj)) {
+          return ThrowException(
+            Exception::Error(
+              String::New("size must be smaller or equal to buffer length")
+            )
+          );
+        }
+      }
+      if (pcap_sendpacket(obj->pcap_handle, (const u_char*) Buffer::Data(buffer_obj), buffer_size) == -1) {
+        return ThrowException(
+          Exception::Error(String::New(pcap_geterr(obj->pcap_handle)))
+        );
+      }
+      return Undefined();
+    }
+
     static Handle<Value> Open(const Arguments& args) {
       HandleScope scope;
       Pcap *obj = ObjectWrap::Unwrap<Pcap>(args.This());
@@ -462,6 +516,7 @@ class Pcap : public ObjectWrap {
       Pcap_constructor->InstanceTemplate()->SetInternalFieldCount(1);
       Pcap_constructor->SetClassName(name);
 
+      NODE_SET_PROTOTYPE_METHOD(Pcap_constructor, "send", Send);
       NODE_SET_PROTOTYPE_METHOD(Pcap_constructor, "open", Open);
       NODE_SET_PROTOTYPE_METHOD(Pcap_constructor, "close", Close);
 #ifdef _WIN32
