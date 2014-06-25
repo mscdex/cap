@@ -177,9 +177,10 @@ Cap methods
 
 * **close**() - _(void)_ - Stops capturing.
 
-* **setMinBytes**(< _integer_ >nBytes) - _(void) - **(Windows ONLY)** This sets the minimum number of packet bytes that must be captured before the full packet data is made available. If this value is set too high, you may not receive any packets until WinPCap's internal buffer fills up. Therefore it's generally best to pass in 0 to this function after calling open(), despite it resulting in more syscalls.
+* **setMinBytes**(< _integer_ >nBytes) - _(void)_ - **(Windows ONLY)** This sets the minimum number of packet bytes that must be captured before the full packet data is made available. If this value is set too high, you may not receive any packets until WinPCap's internal buffer fills up. Therefore it's generally best to pass in 0 to this function after calling open(), despite it resulting in more syscalls.
 
-* **send**(< _Buffer_ >buffer, < _integer_ > bytesToSend) - (integer) Sends an arbitrary packet on the connected `device`.  bytesToSend is optional and defaults to the buffer's length.
+* **send**(< _Buffer_ >buffer[, < _integer_ >nBytes]) - _(void)_ - Sends an arbitrary, raw packet on the opened device. `nBytes` is the number of bytes in `buffer` to send (starting from position 0) and defaults to `buffer.length`.
+
 
 Cap static methods
 ------------------

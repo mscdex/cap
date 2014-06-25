@@ -44,7 +44,8 @@ static Persistent<String> emit_symbol;
 static Persistent<String> packet_symbol;
 static Persistent<String> close_symbol;
 
-void SetAddrStringHelper(const char* key, sockaddr *addr,
+void SetAddrStringHelper(const char* key,
+                         sockaddr *addr,
                          Local<Object> Address) {
   if (key && addr) {
     char dst_addr[INET6_ADDRSTRLEN + 1] = {0};
@@ -121,7 +122,8 @@ class Pcap : public ObjectWrap {
       return false;
     }
 
-    static void EmitPacket(u_char* user, const struct pcap_pkthdr* pkt_hdr,
+    static void EmitPacket(u_char* user,
+                           const struct pcap_pkthdr* pkt_hdr,
                            const u_char* pkt_data) {
       HandleScope scope;
       Pcap *obj = (Pcap*) user;
@@ -243,9 +245,9 @@ class Pcap : public ObjectWrap {
 #else
       Local<Value> buffer_obj = args[0];
 #endif
-      if (args.Length() == 1) {
+      if (args.Length() == 1)
         buffer_size = Buffer::Length(buffer_obj);
-      } else {
+      else {
         if (buffer_size > Buffer::Length(buffer_obj)) {
           return ThrowException(
             Exception::Error(
@@ -254,11 +256,15 @@ class Pcap : public ObjectWrap {
           );
         }
       }
-      if (pcap_sendpacket(obj->pcap_handle, (const u_char*) Buffer::Data(buffer_obj), buffer_size) == -1) {
+
+      if (pcap_sendpacket(obj->pcap_handle,
+                          (const u_char*)Buffer::Data(buffer_obj),
+                          buffer_size) == -1) {
         return ThrowException(
           Exception::Error(String::New(pcap_geterr(obj->pcap_handle)))
         );
       }
+
       return Undefined();
     }
 
@@ -549,7 +555,8 @@ static Handle<Value> ListDevices(const Arguments& args) {
 
   DevsArray = Array::New();
 
-  for (i = 0, cur_dev = alldevs; cur_dev != NULL;
+  for (i = 0, cur_dev = alldevs;
+       cur_dev != NULL;
        cur_dev = cur_dev->next, ++i) {
     Dev = Object::New();
     AddrArray = Array::New();
@@ -560,7 +567,8 @@ static Handle<Value> ListDevices(const Arguments& args) {
                String::New(cur_dev->description));
     }
 
-    for (j = 0, cur_addr = cur_dev->addresses; cur_addr != NULL;
+    for (j = 0, cur_addr = cur_dev->addresses;
+         cur_addr != NULL;
          cur_addr = cur_addr->next) {
       if (cur_addr->addr) {
         af = cur_addr->addr->sa_family;
