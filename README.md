@@ -173,7 +173,7 @@ Cap methods
 
 * **(constructor)**() - Creates and returns a new Cap instance.
 
-* **open**(< _string_ >device, < _string_ >filter, < _integer_ >bufSize, < _Buffer_ >buffer) - _(void)_ - Opens `device` and starts capturing packets using `filter`. `bufSize` is the size of the internal buffer that libpcap uses to temporarily store packets until they are emitted. `buffer` is a Buffer large enough to store one packet. If open() is called again without a previous call to close(), an implicit close() will occur first.
+* **open**(< _string_ >device, < _string_ >filter, < _integer_ >bufSize, < _Buffer_ >buffer) - _(void)_ - Opens `device` and starts capturing packets using `filter`. To see the syntax for `filter` check [`pcap-filter` man page](http://www.tcpdump.org/manpages/pcap-filter.7.html). `bufSize` is the size of the internal buffer that libpcap uses to temporarily store packets until they are emitted. `buffer` is a Buffer large enough to store one packet. If open() is called again without a previous call to close(), an implicit close() will occur first.
 
 * **close**() - _(void)_ - Stops capturing.
 
