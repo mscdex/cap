@@ -95,8 +95,7 @@ class Pcap : public ObjectWrap {
 
     ~Pcap() {
       close();
-      Emit.Dispose();
-      Emit.Clear();
+      NanDisposePersistent(Emit);
     }
 
     bool close() {
@@ -134,15 +133,21 @@ class Pcap : public ObjectWrap {
       }
       memcpy(obj->buffer_data, pkt_data, copy_len);
 
-      TryCatch try_catch;
       Handle<Value> emit_argv[3] = {
-        packet_symbol,
+        NanNew<String>(packet_symbol),
         NanNew<Number>(copy_len),
         NanNew<Boolean>(truncated)
       };
-      obj->Emit->Call(obj->handle_, 3, emit_argv);
-      if (try_catch.HasCaught())
-        FatalException(try_catch);
+      NanMakeCallback(
+#if NODE_MAJOR_VERSION == 0 && NODE_MINOR_VERSION <= 10
+        obj->handle_,
+#else
+        NanNew<Object>(obj->persistent()),
+#endif
+        NanNew<Function>(obj->Emit),
+        3,
+        emit_argv
+      );
     }
 
 #ifdef _WIN32
@@ -190,7 +195,13 @@ class Pcap : public ObjectWrap {
 
       NanAssignPersistent<Function>(
         obj->Emit,
-        Local<Function>::Cast(obj->handle_->Get(emit_symbol))
+        Local<Function>::Cast(
+#if NODE_MAJOR_VERSION == 0 && NODE_MINOR_VERSION <= 10
+          obj->handle_->Get(emit_symbol)
+#else
+          NanNew<Object>(obj->persistent())->Get(NanNew<String>(emit_symbol))
+#endif
+        )
       );
 
       NanReturnValue(args.This());
@@ -449,7 +460,7 @@ class Pcap : public ObjectWrap {
     }
 };
 
-static Handle<Value> ListDevices(const Arguments& args) {
+static NAN_METHOD(ListDevices) {
   NanScope();
 
   char errbuf[PCAP_ERRBUF_SIZE];
@@ -527,7 +538,7 @@ static NAN_METHOD(FindDevice) {
   if (args.Length() > 0) { 
     if (!args[0]->IsString())
       return NanThrowTypeError("Expected string for IP");
-    String::AsciiValue ipstr(args[0]->ToString());
+    NanUtf8String ipstr(args[0]->ToString());
     ip = (char*)malloc(ipstr.length());
     strcpy(ip, *ipstr);
   }
