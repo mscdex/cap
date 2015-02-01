@@ -5,6 +5,9 @@
       'sources': [
         'src/binding.cc',
       ],
+      'include_dirs': [
+        "<!(node -e \"require('nan')\")",
+      ],
       'conditions': [
         [ 'OS=="win"', {
           'include_dirs': [
