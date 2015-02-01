@@ -36,6 +36,21 @@
 # include <arpa/inet.h>
 # include <sys/ioctl.h>
 #endif
+#if __linux__
+# include <dlfcn.h>
+  // Without immediate mode some architectures (e.g. Linux with TPACKET_V3)
+  // will buffer replies and potentially cause a *long* delay in packet
+  // reception
+
+  // pcap_set_immediate_mode is new as of libpcap 1.5.1, so we check for
+  // this new method dynamically ...
+  typedef void* (*set_immediate_fn)(pcap_t *p, int immediate);
+  void *_pcap_lib_handle = dlopen("libpcap.so", RTLD_LAZY);
+  set_immediate_fn set_immediate_mode =
+    (set_immediate_fn)(dlsym(_pcap_lib_handle, "pcap_set_immediate_mode"));
+#else
+# define set_immediate_mode NULL
+#endif
 
 using namespace node;
 using namespace v8;
@@ -316,6 +331,9 @@ class Pcap : public ObjectWrap {
       // On Linux this is required.
       if (pcap_set_timeout(obj->pcap_handle, 1000) != 0)
         return NanThrowError("Unable to set read timeout");
+
+      if (set_immediate_mode)
+        set_immediate_mode(obj->pcap_handle, 1);
 
       if (pcap_activate(obj->pcap_handle) != 0)
         return NanThrowError(pcap_geterr(obj->pcap_handle));
