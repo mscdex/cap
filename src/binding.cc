@@ -390,7 +390,7 @@ class Pcap : public ObjectWrap {
 
       int r;
 #ifdef _WIN32
-      r = uv_async_init(uv_default_loop(), &obj->async, cb_packets);
+      r = uv_async_init(uv_default_loop(), &obj->async, (uv_async_cb)cb_packets);
       assert(r == 0);
       obj->async.data = obj;
       r = RegisterWaitForSingleObject(
