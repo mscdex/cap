@@ -36,6 +36,7 @@
 # include <arpa/inet.h>
 # include <sys/ioctl.h>
 #endif
+
 #if __linux__
 # include <dlfcn.h>
   // Without immediate mode some architectures (e.g. Linux with TPACKET_V3)
@@ -48,8 +49,6 @@
   void *_pcap_lib_handle = dlopen("libpcap.so", RTLD_LAZY);
   set_immediate_fn set_immediate_mode =
     (set_immediate_fn)(dlsym(_pcap_lib_handle, "pcap_set_immediate_mode"));
-#else
-# define set_immediate_mode NULL
 #endif
 
 using namespace node;
@@ -332,8 +331,10 @@ class Pcap : public ObjectWrap {
       if (pcap_set_timeout(obj->pcap_handle, 1000) != 0)
         return NanThrowError("Unable to set read timeout");
 
-      if (set_immediate_mode)
+#if __linux__
+      if (set_immediate_mode != NULL)
         set_immediate_mode(obj->pcap_handle, 1);
+#endif
 
       if (pcap_activate(obj->pcap_handle) != 0)
         return NanThrowError(pcap_geterr(obj->pcap_handle));
