@@ -4,7 +4,7 @@
   "description": "A cross-platform binding for performing packet capturing with node.js",
   "main": "./lib/Cap",
   "dependencies": {
-    "nan": "^1.8.4"
+    "nan": "^2.0.8"
   },
   "engines": { "node": ">=0.8.0" },
   "keywords": [ "pcap", "packet", "capture", "libpcap", "winpcap" ],
