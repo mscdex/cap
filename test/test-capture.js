@@ -84,8 +84,7 @@ process.once('uncaughtException', function(err) {
   if (t > -1 && !/(?:^|\n)AssertionError: /i.test(''+err))
     console.error(makeMsg('Unexpected Exception:'));
 
-  console.error(err.stack);
-  process.exit(1);
+  throw err;
 }).once('exit', function() {
   assert(t === tests.length - 1,
          makeMsg('Only finished ' + (t + 1) + '/' + tests.length + ' tests',
