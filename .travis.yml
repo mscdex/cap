@@ -21,9 +21,9 @@ env:
   - TRAVIS_NODE_VERSION="iojs-2"
   - TRAVIS_NODE_VERSION="iojs-3"
 install:
-  - rm -rf ~/.nvm && git clone https://github.com/creationix/nvm.git ~/.nvm && source ~/.nvm/nvm.sh && nvm install $TRAVIS_NODE_VERSION
-  - npm --version
+  - sudo su - root -c "rm -rf ~/.nvm && git clone https://github.com/creationix/nvm.git ~/.nvm && source ~/.nvm/nvm.sh && nvm install $TRAVIS_NODE_VERSION"
+  - sudo npm --version
   - if [[ $TRAVIS_OS_NAME == "linux" ]]; then export CXX=g++-4.8; export CC=gcc-4.8; fi
   - $CXX --version
-  - npm install
-script: sudo $(type -P npm) test
+  - sudo npm install
+script: sudo npm test
