@@ -6,6 +6,10 @@
   "dependencies": {
     "nan": "^2.0.8"
   },
+  "scripts": {
+    "install": "node-gyp rebuild",
+    "test": "node test/test.js"
+  },
   "engines": { "node": ">=0.8.0" },
   "keywords": [ "pcap", "packet", "capture", "libpcap", "winpcap" ],
   "licenses": [ { "type": "MIT", "url": "http://github.com/mscdex/cap/raw/master/LICENSE" } ],

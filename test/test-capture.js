@@ -1,0 +1,100 @@
+var Cap = require('../lib/Cap').Cap,
+    decoders = require('../lib/Cap').decoders,
+    PROTOCOL = decoders.PROTOCOL;
+
+var path = require('path'),
+    assert = require('assert'),
+    http = require('http');
+
+var t = -1,
+    group = path.basename(__filename, '.js') + '/',
+    timeout,
+    localIP;
+
+var tests = [
+  { run: function() {
+      var p = new Cap();
+      var device = Cap.findDevice(localIP);
+      var filter = [
+        'tcp',
+        'dst port 80',
+        '(((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2)) > 0)'
+      ].join(' and ');
+      var bufSize = 10 * 1024 * 1024;
+      var buffer = new Buffer(65535);
+      var linkType = p.open(device, filter, bufSize, buffer);
+      var evCount = 0;
+
+      p.setMinBytes && p.setMinBytes(0);
+      p.once('packet', function(nbytes, trunc) {
+        assert.strictEqual(nbytes > 0, true);
+        p.close();
+        var payload = getTCPPayload(buffer, linkType);
+        assert.strictEqual(/^GET \/ HTTP\/1\.1/.test(payload), true);
+        checkDone();
+      });
+      http.get('http://google.com', function(res) {
+        res.once('end', checkDone);
+        res.resume();
+      });
+      function checkDone() {
+        if (++evCount === 2)
+          next();
+      }
+    },
+    what: 'Capture outbound HTTP traffic'
+  },
+];
+
+function getTCPPayload(buffer, linkType) {
+  var payload;
+  if (linkType === 'ETHERNET') {
+    var ret = decoders.Ethernet(buffer);
+    if (ret.info.type === PROTOCOL.ETHERNET.IPV4) {
+      ret = decoders.IPV4(buffer, ret.offset);
+      if (ret.info.protocol === PROTOCOL.IP.TCP) {
+        var datalen = ret.info.totallen - ret.hdrlen;
+        ret = decoders.TCP(buffer, ret.offset);
+        datalen -= ret.hdrlen;
+        payload = buffer.toString('binary',
+                                  ret.offset,
+                                  ret.offset + datalen);
+      }
+    }
+  }
+  return payload;
+}
+
+function next() {
+  clearTimeout(timeout);
+  if (t === tests.length - 1)
+    return;
+  var v = tests[++t];
+  timeout = setTimeout(function() {
+    throw new Error('Capture timeout');
+  }, 20 * 1000);
+  v.run.call(v);
+}
+
+function makeMsg(msg, what) {
+  return '[' + group + (what || tests[t].what) + ']: ' + msg;
+}
+
+process.once('uncaughtException', function(err) {
+  if (t > -1 && !/(?:^|\n)AssertionError: /i.test(''+err))
+    console.error(makeMsg('Unexpected Exception:'));
+
+  throw err;
+}).once('exit', function() {
+  assert(t === tests.length - 1,
+         makeMsg('Only finished ' + (t + 1) + '/' + tests.length + ' tests',
+                 '_exit'));
+});
+
+
+// Determine "primary" IP address
+http.get('http://google.com', function(res) {
+  localIP = res.socket.address().address;
+  res.on('end', next);
+  res.resume();
+});
