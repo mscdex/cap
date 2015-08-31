@@ -62,7 +62,8 @@ void SetAddrStringHelper(const char* key,
 class Pcap : public Nan::ObjectWrap {
   public:
     Nan::Persistent<Function> Emit;
-
+    bool closing;
+    bool handling_packets;
 #ifdef _WIN32
     HANDLE wait;
     uv_async_t async;
@@ -79,6 +80,8 @@ class Pcap : public Nan::ObjectWrap {
       pcap_handle = NULL;
       buffer_data = NULL;
       buffer_length = 0;
+      closing = false;
+      handling_packets = false;
 #ifdef _WIN32
       wait = NULL;
 #endif
@@ -90,7 +93,7 @@ class Pcap : public Nan::ObjectWrap {
     }
 
     bool close() {
-      if (pcap_handle) {
+      if (pcap_handle && !closing) {
 #ifdef _WIN32
         if (wait) {
           UnregisterWait(wait);
@@ -100,14 +103,21 @@ class Pcap : public Nan::ObjectWrap {
 #else
         uv_poll_stop(&poll_handle);
 #endif
+        closing = true;
+        cleanup();
+        return true;
+      }
+      return false;
+    }
+
+    void cleanup() {
+      if (pcap_handle && !handling_packets) {
         pcap_close(pcap_handle);
         pcap_handle = NULL;
         buffer_data = NULL;
         buffer_length = 0;
         Unref();
-        return true;
       }
-      return false;
     }
 
     static void EmitPacket(u_char* user,
@@ -143,10 +153,16 @@ class Pcap : public Nan::ObjectWrap {
       Pcap *obj = (Pcap*)handle->data;
       int packet_count;
 
+      obj->handling_packets = true;
+
       do {
         packet_count = pcap_dispatch(obj->pcap_handle, 1, Pcap::EmitPacket,
                                      (u_char*)obj);
-      } while (packet_count > 0);
+      } while (packet_count > 0 && !obj->closing);
+
+      obj->handling_packets = false;
+      if (obj->closing)
+        obj->cleanup();
     }
     static void CALLBACK OnPacket(void* data, BOOLEAN didTimeout) {
       assert(!didTimeout);
@@ -163,10 +179,17 @@ class Pcap : public Nan::ObjectWrap {
 
       if (events & UV_READABLE) {
         int packet_count;
+
+        obj->handling_packets = true;
+
         do {
           packet_count = pcap_dispatch(obj->pcap_handle, 1, Pcap::EmitPacket,
                                        (u_char*)obj);
-        } while (packet_count > 0);
+        } while (packet_count > 0 && !obj->closing);
+
+        obj->handling_packets = false;
+        if (obj->closing)
+          obj->cleanup();
       }
     }
 #endif
