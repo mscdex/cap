@@ -153,10 +153,15 @@ class Pcap : public Nan::ObjectWrap {
       Pcap *obj = (Pcap*)handle->data;
       int packet_count;
 
+      if (obj->closing)
+        return obj->cleanup();
+
       obj->handling_packets = true;
 
       do {
-        packet_count = pcap_dispatch(obj->pcap_handle, 1, Pcap::EmitPacket,
+        packet_count = pcap_dispatch(obj->pcap_handle,
+                                     1,
+                                     Pcap::EmitPacket,
                                      (u_char*)obj);
       } while (packet_count > 0 && !obj->closing);
 
@@ -176,14 +181,18 @@ class Pcap : public Nan::ObjectWrap {
     static void cb_packets(uv_poll_t* handle, int status, int events) {
       assert(status == 0);
       Pcap *obj = (Pcap*)handle->data;
+      int packet_count;
+
+      if (obj->closing)
+        return obj->cleanup();
 
       if (events & UV_READABLE) {
-        int packet_count;
-
         obj->handling_packets = true;
 
         do {
-          packet_count = pcap_dispatch(obj->pcap_handle, 1, Pcap::EmitPacket,
+          packet_count = pcap_dispatch(obj->pcap_handle,
+                                       1,
+                                       Pcap::EmitPacket,
                                        (u_char*)obj);
         } while (packet_count > 0 && !obj->closing);
 
