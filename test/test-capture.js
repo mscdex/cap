@@ -67,12 +67,15 @@ function getTCPPayload(buffer, linkType) {
 
 function next() {
   clearTimeout(timeout);
+  if (t > -1)
+    console.log('Finished %j', tests[t].what);
   if (t === tests.length - 1)
     return;
   var v = tests[++t];
   timeout = setTimeout(function() {
     throw new Error('Capture timeout');
   }, 20 * 1000);
+  console.log('Executing %j', v.what);
   v.run.call(v);
 }
 
