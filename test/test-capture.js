@@ -95,6 +95,8 @@ process.once('uncaughtException', function(err) {
 // Determine "primary" IP address
 http.get('http://google.com', function(res) {
   localIP = res.socket.address().address;
+  console.log('localIP = %j', localIP);
+  console.log('device list = %s', require('util').inspect(Cap.deviceList()));
   res.on('end', next);
   res.resume();
 });
