@@ -26,4 +26,4 @@ install:
   - if [[ $TRAVIS_OS_NAME == "linux" ]]; then export CXX=g++-4.8; export CC=gcc-4.8; fi
   - $CXX --version
   - npm install
-script: npm test
+script: sudo npm test
