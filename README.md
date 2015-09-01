@@ -4,7 +4,8 @@ Description
 
 A cross-platform binding for performing packet capturing with [node.js](http://nodejs.org/).
 
-This binding is tested on Windows and Linux.
+[![Build Status](https://travis-ci.org/mscdex/cap.svg)](https://travis-ci.org/mscdex/cap)
+[![Build status](https://ci.appveyor.com/api/projects/status/hypcya975yogcu9h)](https://ci.appveyor.com/project/mscdex/cap)
 
 
 Requirements
