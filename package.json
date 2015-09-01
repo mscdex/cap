@@ -10,7 +10,7 @@
     "install": "node-gyp rebuild",
     "test": "node test/test.js"
   },
-  "engines": { "node": ">=0.8.0" },
+  "engines": { "node": ">=0.10.0" },
   "keywords": [ "pcap", "packet", "capture", "libpcap", "winpcap" ],
   "licenses": [ { "type": "MIT", "url": "http://github.com/mscdex/cap/raw/master/LICENSE" } ],
   "repository" : { "type": "git", "url": "http://github.com/mscdex/cap.git" }

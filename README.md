@@ -11,7 +11,7 @@ A cross-platform binding for performing packet capturing with [node.js](http://n
 Requirements
 ============
 
-* [node.js](http://nodejs.org/) -- v0.8.0 or newer
+* [node.js](http://nodejs.org/) -- v0.10.0 or newer
 
 * For Windows: [WinPcap](http://www.winpcap.org/install/default.htm)
 
