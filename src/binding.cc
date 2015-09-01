@@ -148,8 +148,12 @@ class Pcap : public Nan::ObjectWrap {
     }
 
 #ifdef _WIN32
+# if NAUV_UVVERSION < 0x000b17
     static void cb_packets(uv_async_t* handle, int status) {
       assert(status == 0);
+# else
+    static void cb_packets(uv_async_t* handle) {
+# endif
       Pcap *obj = (Pcap*)handle->data;
       int packet_count;
 
