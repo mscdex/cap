@@ -573,7 +573,7 @@ static NAN_METHOD(FindDevice) {
   }
 
   for (dev = alldevs; dev != NULL; dev = dev->next) {
-    if (dev->addresses != NULL && !(dev->flags & PCAP_IF_LOOPBACK)) {
+    if (dev->addresses != NULL) {
       for (addr = dev->addresses; addr != NULL; addr = addr->next) {
         if (addr->addr->sa_family == AF_INET
             || addr->addr->sa_family == AF_INET6) {
