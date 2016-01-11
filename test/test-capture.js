@@ -99,6 +99,9 @@ process.once('uncaughtException', function(err) {
 http.get('http://google.com', function(res) {
   localIP = res.socket.address().address;
   console.log('localIP = %j', localIP);
+  var interfaces = require('os').networkInterfaces();
+  console.log('node interface list:\n%s',
+              require('util').inspect(interfaces, false, 6));
   console.log('Cap device list:\n%s',
               require('util').inspect(Cap.deviceList(), false, 6));
   res.on('end', next);
