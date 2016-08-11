@@ -4,7 +4,7 @@
   "description": "A cross-platform binding for performing packet capturing with node.js",
   "main": "./lib/Cap",
   "dependencies": {
-    "nan": "^2.0.8"
+    "nan": "^2.4.0"
   },
   "scripts": {
     "install": "node-gyp rebuild",
