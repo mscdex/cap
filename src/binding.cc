@@ -76,12 +76,15 @@ class Pcap : public Nan::ObjectWrap {
     char *buffer_data;
     size_t buffer_length;
 
+    pcap_send_queue* sendQueue;
+
     Pcap() {
       pcap_handle = NULL;
       buffer_data = NULL;
       buffer_length = 0;
       closing = false;
       handling_packets = false;
+      sendQueue = NULL;
 #ifdef _WIN32
       wait = NULL;
 #endif
@@ -112,6 +115,10 @@ class Pcap : public Nan::ObjectWrap {
 
     void cleanup() {
       if (pcap_handle && !handling_packets) {
+        if (sendQueue != NULL) {
+          pcap_sendqueue_destroy(sendQueue);
+          sendQueue = NULL;
+        }
         pcap_close(pcap_handle);
         pcap_handle = NULL;
         buffer_data = NULL;
@@ -221,6 +228,102 @@ class Pcap : public Nan::ObjectWrap {
       ));
 
       info.GetReturnValue().Set(info.This());
+    }
+
+    static NAN_METHOD(DestroyQueue) {
+      Nan::HandleScope scope;
+      Pcap *obj = Nan::ObjectWrap::Unwrap<Pcap>(info.This());
+      if (obj->sendQueue != NULL) {
+        pcap_sendqueue_destroy(obj->sendQueue);
+        obj->sendQueue = NULL;
+      }
+    }
+
+    static NAN_METHOD(AllocateQueue) {
+      Nan::HandleScope scope;
+      Pcap *obj = Nan::ObjectWrap::Unwrap<Pcap>(info.This());
+      unsigned int memsize = 0;
+
+      if (obj->sendQueue != NULL) {
+        return Nan::ThrowError("The send queue has already been allocated.");
+      }
+
+      if (info.Length() == 0)
+        return Nan::ThrowTypeError("the first parameter must be a positive integer");
+
+      if (info.Length() >= 1) {
+        if (!info[0]->IsUint32())
+          return Nan::ThrowTypeError("memsize must be a positive integer");
+
+        memsize = info[0]->Uint32Value();
+      }
+
+      obj->sendQueue = pcap_sendqueue_alloc(memsize);
+
+      if (obj->sendQueue == NULL) {
+        return Nan::ThrowError("Pcap could not allocate a queue.");
+      }
+
+      return;
+    }
+
+    static NAN_METHOD(TransmitQueue) {
+      Nan::HandleScope scope;
+      Pcap *obj = Nan::ObjectWrap::Unwrap<Pcap>(info.This());
+
+      if (obj->sendQueue == NULL) {
+        return Nan::ThrowError("TransmitQueue called before AllocateSendQueue");
+      }
+
+      unsigned int sendSize = obj->sendQueue->len;
+      unsigned int bytesSent = 0;
+      bytesSent = pcap_sendqueue_transmit(obj->pcap_handle, obj->sendQueue, 0);
+      if (bytesSent != sendSize) {
+        return Nan::ThrowError("Error: Some data not sent");
+      } 
+
+    }
+
+    static NAN_METHOD(SendQueue) {
+      Nan::HandleScope scope;
+      Pcap *obj = Nan::ObjectWrap::Unwrap<Pcap>(info.This());
+      pcap_pkthdr hdr ;
+      size_t packetLength = 0;
+      
+      if (obj->sendQueue == NULL) {
+        return Nan::ThrowError("SendQueue called before AllocateSendQueue");
+      }
+
+      if (info.Length() == 2) {
+        if (!info[1]->IsUint32()) {
+          return Nan::ThrowTypeError("First parameter is length (positive integer`)");
+        }
+        if (!Buffer::HasInstance(info[0])) {
+          return Nan::ThrowError("Missing Buffer parameter");
+        }
+      } else {
+        return Nan::ThrowError("Wrong parameters in call to SendQueue");
+      }
+
+      #if NODE_MAJOR_VERSION == 0 && NODE_MINOR_VERSION < 10
+      Local<Object> buffer_obj = info[0]->ToObject();
+#else
+      Local<Value> buffer_obj = info[0];
+#endif
+      packetLength = Buffer::Length(buffer_obj);
+      if (packetLength > Buffer::Length(buffer_obj)) {
+        return Nan::ThrowTypeError(
+          "size must be smaller or equal to buffer length"
+        );
+      }
+    
+      hdr.ts.tv_sec = 0;
+      hdr.ts.tv_usec = 0;
+      hdr.caplen =(int)packetLength;
+      hdr.len = (int)packetLength;
+
+      pcap_sendqueue_queue(obj->sendQueue, &hdr,  (const u_char*)(Buffer::Data(buffer_obj)));
+
     }
 
     static NAN_METHOD(Send) {
@@ -472,6 +575,10 @@ class Pcap : public Nan::ObjectWrap {
       tpl->InstanceTemplate()->SetInternalFieldCount(1);
       tpl->SetClassName(Nan::New<String>("Cap").ToLocalChecked());
 
+      Nan::SetPrototypeMethod(tpl, "allocateQueue", AllocateQueue);
+      Nan::SetPrototypeMethod(tpl, "sendQueue", SendQueue);
+      Nan::SetPrototypeMethod(tpl, "transmitQueue", TransmitQueue);
+      Nan::SetPrototypeMethod(tpl, "destroyQueue", DestroyQueue);
       Nan::SetPrototypeMethod(tpl, "send", Send);
       Nan::SetPrototypeMethod(tpl, "open", Open);
       Nan::SetPrototypeMethod(tpl, "close", Close);

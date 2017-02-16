@@ -174,6 +174,14 @@ Cap methods
 
 * **(constructor)**() - Creates and returns a new Cap instance.
 
+* **allocateQueue**(< _integer_ >size) - Allocates a packet queue of `size` bytes.  Calculate this as sizeof(pkt_header) * packet_len * number_of_packets_to_queue_up.
+
+* **sendQueue**(< _Buffer_ > packetData, < _integer_ > packetLength ) - Add a packet to the queue.  They wait here until transmitQueue is called.
+
+* **transmitQueue**() - Transmit the queued packets on the currently open pcap device.  It also empties the queue to accept more packets. 
+
+* **destroyQueue**() - Free the packet queue.
+
 * **open**(< _string_ >device, < _string_ >filter, < _integer_ >bufSize, < _Buffer_ >buffer) - _(void)_ - Opens `device` and starts capturing packets using `filter`. To see the syntax for `filter` check [`pcap-filter` man page](http://www.tcpdump.org/manpages/pcap-filter.7.html). `bufSize` is the size of the internal buffer that libpcap uses to temporarily store packets until they are emitted. `buffer` is a Buffer large enough to store one packet. If open() is called again without a previous call to close(), an implicit close() will occur first.
 
 * **close**() - _(void)_ - Stops capturing.
