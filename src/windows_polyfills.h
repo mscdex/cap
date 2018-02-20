@@ -78,6 +78,8 @@ strlcpy(char * dst, const char * src, size_t siz)
   return(s - src - 1);	/* count does not include NUL */
 }
 
+// Windows Vista+ already has inet_ntop
+#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0600
 ////////////////////////   inet_ntop.c (modified) //////////////////////////
 /*
  * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
@@ -249,3 +251,4 @@ inet_ntop6(const u_char *src, char *dst, socklen_t size)
   strcpy(dst, tmp);
   return (dst);
 }
+#endif
