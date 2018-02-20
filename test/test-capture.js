@@ -1,15 +1,15 @@
-var Cap = require('../lib/Cap').Cap,
-    decoders = require('../lib/Cap').decoders,
-    PROTOCOL = decoders.PROTOCOL;
+var Cap = require('../lib/Cap').Cap;
+var decoders = require('../lib/Cap').decoders;
+var PROTOCOL = decoders.PROTOCOL;
 
-var path = require('path'),
-    assert = require('assert'),
-    http = require('http');
+var path = require('path');
+var assert = require('assert');
+var http = require('http');
 
-var t = -1,
-    group = path.basename(__filename, '.js') + '/',
-    timeout,
-    localIP;
+var t = -1;
+var group = path.basename(__filename, '.js') + '/';
+var timeout;
+var localIP;
 
 var tests = [
   { run: function() {
@@ -21,7 +21,7 @@ var tests = [
         '(((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2)) > 0)'
       ].join(' and ');
       var bufSize = 10 * 1024 * 1024;
-      var buffer = new Buffer(65535);
+      var buffer = Buffer.alloc(65535);
       var linkType = p.open(device, filter, bufSize, buffer);
       var evCount = 0;
 
