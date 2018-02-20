@@ -1,5 +1,5 @@
 { "name": "cap",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "author": "Brian White <mscdex@mscdex.net>",
   "description": "A cross-platform binding for performing packet capturing with node.js",
   "main": "./lib/Cap",
