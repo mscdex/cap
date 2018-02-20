@@ -13,7 +13,7 @@ Requirements
 
 * [node.js](http://nodejs.org/) -- v4.0.0 or newer
 
-* For Windows: [WinPcap](http://www.winpcap.org/install/default.htm)
+* For Windows: [Npcap with WinPcap compatibility](https://nmap.org/npcap/)
 
 * For *nix: libpcap and libpcap-dev/libpcap-devel packages
 
@@ -30,15 +30,15 @@ Examples
 * Capture and decode all outgoing TCP data packets destined for port 80 on the interface for 192.168.0.10:
 
 ```javascript
-var Cap = require('cap').Cap,
-    decoders = require('cap').decoders,
-    PROTOCOL = decoders.PROTOCOL;
+var Cap = require('cap').Cap;
+var decoders = require('cap').decoders;
+var PROTOCOL = decoders.PROTOCOL;
 
-var c = new Cap(),
-    device = Cap.findDevice('192.168.0.10'),
-    filter = 'tcp and dst port 80',
-    bufSize = 10 * 1024 * 1024,
-    buffer = new Buffer(65535);
+var c = new Cap();
+var device = Cap.findDevice('192.168.0.10');
+var filter = 'tcp and dst port 80';
+var bufSize = 10 * 1024 * 1024;
+var buffer = Buffer.alloc(65535);
 
 var linkType = c.open(device, filter, bufSize, buffer);
 
@@ -85,18 +85,18 @@ c.on('packet', function(nbytes, trunc) {
 * Send an arbitrary packet: An arp request for example
 
 ```javascript
-var Cap = require('cap').Cap,
-    c = new Cap(),
-    device = Cap.findDevice('192.168.1.200'),
-    filter = 'arp',
-    bufSize = 10 * 1024 * 1024,
-    buffer = new Buffer(65535);
+var Cap = require('cap').Cap;
+var c = new Cap();
+var device = Cap.findDevice('192.168.1.200');
+var filter = 'arp';
+var bufSize = 10 * 1024 * 1024;
+var buffer = Buffer.alloc(65535);
 
 var linkType = c.open(device, filter, bufSize, buffer);
 
 
 // To use this example, change Source Mac, Sender Hardware Address (MAC) and Target Protocol address
-var buffer = new Buffer ([
+var buffer = Buffer.from([
     // ETHERNET
     0xff, 0xff, 0xff, 0xff, 0xff,0xff,                  // 0    = Destination MAC
     0x84, 0x8F, 0x69, 0xB7, 0x3D, 0x92,                 // 6    = Source MAC
