@@ -23,7 +23,7 @@ install:
   - rm -rf ~/.nvm && git clone https://github.com/creationix/nvm.git ~/.nvm && source ~/.nvm/nvm.sh && nvm install $TRAVIS_NODE_VERSION
   - node --version
   - npm --version
-  - if [[ $TRAVIS_OS_NAME == "linux" ]]; then export CXX=g++-4.8; export CC=gcc-4.8; fi
+  - if [[ $TRAVIS_OS_NAME == "linux" ]]; then export CXX=g++-5; export CC=gcc-5; fi
   - $CXX --version
   - npm install
 script: sudo $(type -P node) test/test.js
