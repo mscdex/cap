@@ -3,21 +3,20 @@
 # Test against these versions of Node.js.
 environment:
   matrix:
-    - nodejs_version: "0.10"
-    - nodejs_version: "0.12"
     - nodejs_version: "4"
     - nodejs_version: "6"
+    - nodejs_version: "8"
+    - nodejs_version: "9"
 
 # Install scripts. (runs after repo cloning)
 install:
   # Get the latest stable version of Node
   - ps: Update-NodeJsInstallation (Get-NodeJsLatestBuild $env:nodejs_version)
+  # Install AutoIt in order to automate installation of npcap
+  - choco install -y autoit
   # Download and install latest npcap with WinPCap compatibility
-  - node -e "var s=0;function go(u){require('https').get(u,function(r){if(s==3){return r.pipe(require('fs').createWriteStream('C:\\npcap.exe'))} var b='';r.on('data',function(d){b+=d}).on('end',function(){if(!s||s==2){++s;return go(r.headers.location)}else if(s==1){++s;return go('https://github.com'+/\/nmap\/npcap\/.+?\.exe/.exec(b)[0])}})})}go('https://github.com/nmap/npcap/releases/latest')"
-  - start "" /WAIT C:\npcap.exe /winpcap_mode=yes /S /Q
-  # Typical npm stuff.
-  - IF %nodejs_version% LSS 1 npm -g install npm
-  - IF %nodejs_version% LSS 1 set PATH=%APPDATA%\npm;%PATH%
+  - start "" /WAIT autoit3 test\npcap-install.au3
+  # Start build
   - set CL=-DDELAYIMP_INSECURE_WRITABLE_HOOKS
   - npm install
 
