@@ -134,15 +134,17 @@ class Pcap : public Nan::ObjectWrap {
       }
       memcpy(obj->buffer_data, pkt_data, copy_len);
 
-      Local<Value> emit_argv[3] = {
+      Local<Value> emit_argv[5] = {
         Nan::New<String>(packet_symbol),
         Nan::New<Number>(copy_len),
-        Nan::New<Boolean>(truncated)
+        Nan::New<Boolean>(truncated),
+        Nan::New<Number>(pkt_hdr->ts.tv_sec),
+        Nan::New<Number>(pkt_hdr->ts.tv_usec)
       };
       Nan::MakeCallback(
         Nan::New<Object>(obj->persistent()),
         Nan::New<Function>(obj->Emit),
-        3,
+        5,
         emit_argv
       );
     }
