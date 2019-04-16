@@ -134,17 +134,23 @@ class Pcap : public Nan::ObjectWrap {
       }
       memcpy(obj->buffer_data, pkt_data, copy_len);
 
-      Local<Value> emit_argv[5] = {
+      Local<Object> Timestamp;
+      Timestamp = Nan::New<Object>();
+      Timestamp->Set(Nan::New<String>("seconds").ToLocalChecked(),
+             Nan::New<Number>(pkt_hdr->ts.tv_sec));
+      Timestamp->Set(Nan::New<String>("microseconds").ToLocalChecked(),
+             Nan::New<Number>(pkt_hdr->ts.tv_usec));
+
+      Local<Value> emit_argv[4] = {
         Nan::New<String>(packet_symbol),
         Nan::New<Number>(copy_len),
         Nan::New<Boolean>(truncated),
-        Nan::New<Number>(pkt_hdr->ts.tv_sec),
-        Nan::New<Number>(pkt_hdr->ts.tv_usec)
+        Timestamp
       };
       Nan::MakeCallback(
         Nan::New<Object>(obj->persistent()),
         Nan::New<Function>(obj->Emit),
-        5,
+        4,
         emit_argv
       );
     }

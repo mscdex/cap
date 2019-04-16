@@ -44,10 +44,10 @@ var linkType = c.open(device, filter, bufSize, buffer);
 
 c.setMinBytes && c.setMinBytes(0);
 
-c.on('packet', function(nbytes, trunc, timestampSec, timestampMicro) {
+c.on('packet', function(nbytes, trunc, ts) {
   console.log('packet: length ' + nbytes + ' bytes, truncated? '
               + (trunc ? 'yes' : 'no'));
-  const timestamp = Number(`${timestampSec}${Math.floor(timestampMicro/1000)}`);
+  const timestamp = Number(`${ts.seconds}${Math.floor(ts.microseconds/1000)}`);
   console.log(`timestamp: ${new Date(timestamp).toISOString()}`);
 
   // raw packet data === buffer.slice(0, nbytes)
