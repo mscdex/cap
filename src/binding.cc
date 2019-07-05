@@ -191,7 +191,7 @@ class Pcap : public Nan::ObjectWrap {
     }
 #else
     static void cb_packets(uv_poll_t* handle, int status, int events) {
-      assert(status == 0);
+      // assert(status == 0);
       Pcap *obj = (Pcap*)handle->data;
       int packet_count;
 
