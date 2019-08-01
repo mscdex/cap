@@ -138,15 +138,23 @@ class Pcap : public Nan::ObjectWrap {
       }
       memcpy(obj->buffer_data, pkt_data, copy_len);
 
-      Local<Value> emit_argv[3] = {
+      Local<Object> Timestamp;
+      Timestamp = Nan::New<Object>();
+      Timestamp->Set(Nan::New<String>("seconds").ToLocalChecked(),
+             Nan::New<Number>(pkt_hdr->ts.tv_sec));
+      Timestamp->Set(Nan::New<String>("microseconds").ToLocalChecked(),
+             Nan::New<Number>(pkt_hdr->ts.tv_usec));
+
+      Local<Value> emit_argv[4] = {
         Nan::New<String>(packet_symbol),
         Nan::New<Number>(copy_len),
-        Nan::New<Boolean>(truncated)
+        Nan::New<Boolean>(truncated),
+        Timestamp
       };
       obj->async_res.runInAsyncScope(
         Nan::New<Object>(obj->persistent()),
         Nan::New<Function>(obj->Emit),
-        3,
+        4,
         emit_argv
       );
     }
@@ -187,7 +195,7 @@ class Pcap : public Nan::ObjectWrap {
     }
 #else
     static void cb_packets(uv_poll_t* handle, int status, int events) {
-      assert(status == 0);
+      // assert(status == 0);
       Pcap *obj = (Pcap*)handle->data;
       int packet_count;
 
