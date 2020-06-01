@@ -13,7 +13,7 @@ Requirements
 
 * **Node.js:** [v4.0.0 or newer](http://nodejs.org/) 
 
-* **For Windows:** (Re)install [Npcap](https://nmap.org/npcap/) with [WinPcap API-compatible Mode](https://i.imgur.com/5dqfDBl.png) (by default this setting is disabled).
+* **For Windows:** (Re)install [Npcap](https://nmap.org/npcap/) with [WinPcap API-compatible Mode](https://user-images.githubusercontent.com/18501150/83390315-e6a15500-a3f1-11ea-9826-3072d141c417.png) (by default this setting is disabled). 
 
 * **For \*nix:** libpcap and libpcap-dev/libpcap-devel packages
 
