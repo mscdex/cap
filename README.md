@@ -11,11 +11,11 @@ A cross-platform binding for performing packet capturing with [node.js](http://n
 Requirements
 ============
 
-* [node.js](http://nodejs.org/) -- v4.0.0 or newer
+* **Node.js:** [v4.0.0 or newer](http://nodejs.org/) 
 
-* For Windows: [Npcap with WinPcap compatibility](https://nmap.org/npcap/)
+* **For Windows:** (Re)install [Npcap](https://nmap.org/npcap/) with [WinPcap API-compatible Mode](https://user-images.githubusercontent.com/18501150/83390315-e6a15500-a3f1-11ea-9826-3072d141c417.png) (by default this setting is disabled). 
 
-* For *nix: libpcap and libpcap-dev/libpcap-devel packages
+* **For \*nix:** libpcap and libpcap-dev/libpcap-devel packages
 
 
 Install
