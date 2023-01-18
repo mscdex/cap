@@ -1,4 +1,5 @@
-{ "name": "cap",
+{
+  "name": "cap",
   "version": "0.2.1",
   "author": "Brian White <mscdex@mscdex.net>",
   "description": "A cross-platform binding for performing packet capturing with node.js",
@@ -10,8 +11,24 @@
     "install": "node-gyp rebuild",
     "test": "node test/test.js"
   },
-  "engines": { "node": ">=4.0.0" },
-  "keywords": [ "pcap", "packet", "capture", "libpcap", "winpcap" ],
-  "licenses": [ { "type": "MIT", "url": "http://github.com/mscdex/cap/raw/master/LICENSE" } ],
-  "repository" : { "type": "git", "url": "http://github.com/mscdex/cap.git" }
+  "engines": {
+    "node": ">=4.0.0"
+  },
+  "keywords": [
+    "pcap",
+    "packet",
+    "capture",
+    "libpcap",
+    "winpcap"
+  ],
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "http://github.com/mscdex/cap/raw/master/LICENSE"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/mscdex/cap.git"
+  }
 }

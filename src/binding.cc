@@ -26,6 +26,24 @@
     (set_immediate_fn)(dlsym(_pcap_lib_handle, "pcap_set_immediate_mode"));
 #endif
 
+#ifdef _WIN32
+#include <tchar.h>
+BOOL LoadNpcapDlls()
+{
+  _TCHAR npcap_dir[512];
+  UINT len;
+  len = GetSystemDirectory(npcap_dir, 480);
+  if (!len) {
+    return FALSE;
+  }
+  _tcscat_s(npcap_dir, 512, _T("\\Npcap"));
+  if (SetDllDirectory(npcap_dir) == 0) {
+    return FALSE;
+  }
+  return TRUE;
+}
+#endif
+
 using namespace node;
 using namespace v8;
 
@@ -617,6 +635,14 @@ static NAN_METHOD(FindDevice) {
 
 extern "C" {
   void init(Local<Object> target) {
+#ifdef _WIN32
+    /* Load Npcap and its functions. */
+    if (!LoadNpcapDlls())
+    {
+      exit(1);
+    }
+#endif
+
     Nan::HandleScope scope;
     Pcap::Initialize(target);
     Nan::Set(target,
